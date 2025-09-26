@@ -1,4 +1,4 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - dating-app-course
+name: Build and deploy ASP.Net Core + Angular app to Azure Web App - dating-app-course
 
 on: 
   push:
@@ -21,23 +21,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Set up .NET
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      - name: Build with dotnet
-        run: dotnet build DatingApp.sln --configuration ${{ github.event.inputs.environment || 'Release' }}
+      # Set up Node.js for Angular
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      - name: dotnet publish
-        run: dotnet publish -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
+      # Install Angular CLI
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli@20
 
+      # Build Angular frontend
+      - name: Build Angular frontend
+        run: |
+          cd client
+          npm install
+          ng build --configuration ${{ github.event.inputs.environment || 'production' }}
+
+      # Copy Angular build output to API wwwroot
+      - name: Copy Angular build to API wwwroot
+        run: |
+          rm -rf API/wwwroot/*
+          cp -r client/dist/* API/wwwroot/
+
+      # Build and publish API project
+      - name: Publish API project
+        run: dotnet publish API/API.csproj -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
+
+      # Upload artifact for deployment
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
           path: ./publish
 
+# Deploy to SIT
   deploy-sit:
     runs-on: windows-latest
     environment: sit
@@ -55,6 +79,7 @@ jobs:
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
           package: .
 
+# Deploy to QA
   deploy-qa:
     runs-on: windows-latest
     environment: qa
@@ -72,6 +97,7 @@ jobs:
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
           package: .
 
+# Deploy to UAT
   deploy-uat:
     runs-on: windows-latest
     environment: uat
@@ -88,5 +114,3 @@ jobs:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: .
-
-
