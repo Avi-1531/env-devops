@@ -47,8 +47,10 @@ jobs:
       # Copy Angular build output to API wwwroot
       - name: Copy Angular build to API wwwroot
         run: |
-          rm -rf API/wwwroot/*
-          cp -r client/dist/* API/wwwroot/
+          # Remove all existing files in wwwroot
+          Remove-Item -Path "API\wwwroot\*" -Recurse -Force
+          # Copy Angular build files
+          Copy-Item -Path "client\dist\*" -Destination "API\wwwroot" -Recurse
 
       # Build and publish API project
       - name: Publish API project
@@ -114,3 +116,4 @@ jobs:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: .
+
