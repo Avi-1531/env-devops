@@ -1,9 +1,7 @@
 name: Build and deploy ASP.Net Core app to Azure Web App - dating-app-course
 
-on:
+on: 
   push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -87,3 +85,4 @@ jobs:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: .
+
