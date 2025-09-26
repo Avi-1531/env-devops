@@ -27,7 +27,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Build with dotnet
-        run: dotnet build --configuration ${{ github.event.inputs.environment || 'Release' }}
+        run: dotnet build DatingApp.sln --configuration ${{ github.event.inputs.environment || 'Release' }}
 
       - name: dotnet publish
         run: dotnet publish -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
@@ -40,6 +40,7 @@ jobs:
 
   deploy-sit:
     runs-on: windows-latest
+    environment: sit
     needs: build
     steps:
       - name: Download artifact
@@ -56,6 +57,7 @@ jobs:
 
   deploy-qa:
     runs-on: windows-latest
+    environment: qa
     needs: deploy-sit
     steps:
       - name: Download artifact
@@ -72,6 +74,7 @@ jobs:
 
   deploy-uat:
     runs-on: windows-latest
+    environment: uat
     needs: deploy-qa
     steps:
       - name: Download artifact
@@ -85,4 +88,5 @@ jobs:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: .
+
 
