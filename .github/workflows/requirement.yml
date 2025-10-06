@@ -1,28 +1,27 @@
 name: Build and deploy ASP.Net Core + Angular app to Azure Web App - dating-app-course
 
-on: 
+on:
   push:
   workflow_dispatch:
     inputs:
       environment:
-          description: 'Choose environment to run (sit, qa, uat, release)'
-          required: true
-          default: 'all'
-          type: choice
-          options:
-            - sit
-            - qa
-            - uat
-            - release
+        description: 'Choose environment to run (sit, qa, uat, release, all)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - sit
+          - qa
+          - uat
+          - all
       mode:
-          description: 'Choose run mode'
-          required: true
-          default: 'partial'
-          type: choice
-          options:
-            - partial      # Deploy prerequisite environments first
-            - single       # Only deploy the selected environment
-
+        description: 'Choose run mode'
+        required: true
+        default: 'partial'
+        type: choice
+        options:
+          - partial
+          - single
 
 jobs:
   build:
@@ -30,13 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Set up .NET
+      # Setup .NET
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Set up Node.js for Angular
+      # Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -53,28 +52,22 @@ jobs:
           npm install
           ng build --configuration ${{ github.event.inputs.environment || 'production' }}
 
-      
-
-      # Build and publish API project
+      # Build and publish API
       - name: Publish API project
         run: dotnet publish API/API.csproj -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
 
-      # Upload artifact for deployment
-      - name: Upload artifact for deployment job
+      # Upload artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
           path: ./publish
 
-# Deploy to SIT
+# Deploy SIT
   deploy-sit:
     runs-on: windows-latest
-    environment: sit
     needs: build
-    if: >
-      github.event_name == 'push' || 
-      (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) ||
-      (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'sit')
+    if: ${{ github.event_name == 'push' || github.event.inputs.environment == 'all' || github.event.inputs.environment == 'sit' || (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -90,17 +83,11 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: SIT
 
-
-# Deploy to QA
+# Deploy QA
   deploy-qa:
     runs-on: windows-latest
     needs: deploy-sit
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
-        (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) ||
-        (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'qa')
-        )) }}
-
-
+    if: ${{ github.event_name == 'push' || github.event.inputs.environment == 'all' || github.event.inputs.environment == 'qa' || (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -116,15 +103,11 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: QA
 
-
-# Deploy to UAT
+# Deploy UAT
   deploy-uat:
     runs-on: windows-latest
     needs: deploy-qa
-    if: ${{ github.event_name == 'push' || 
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') || 
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'single' && github.event.inputs.environment == 'uat') }}
-
+    if: ${{ github.event_name == 'push' || github.event.inputs.environment == 'all' || github.event.inputs.environment == 'uat' }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -139,5 +122,3 @@ jobs:
           package: .
         env:
           ASPNETCORE_ENVIRONMENT: UAT
-
-
