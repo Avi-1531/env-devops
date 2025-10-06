@@ -84,6 +84,37 @@
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+          
+            "qa": {
+              "outputHashing": "all",
+              "optimization": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.qa.ts"
+                }
+              ]
+            },
+            "uat": {
+              "outputHashing": "all",
+              "optimization": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.uat.ts"
+                }
+              ]
+            },
+            "sit": {
+              "outputHashing": "all",
+              "optimization": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.sit.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
