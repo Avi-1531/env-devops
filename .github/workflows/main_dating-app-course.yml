@@ -2,6 +2,7 @@ name: Build and deploy ASP.Net Core + Angular app to Azure Web App - dating-app-
 
 on: 
   push:
+    branches: "dev"
   workflow_dispatch:
     inputs:
       environment:
@@ -110,5 +111,6 @@ jobs:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: .
+
 
 
