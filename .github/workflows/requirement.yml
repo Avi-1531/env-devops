@@ -71,7 +71,7 @@ jobs:
         github.event.inputs.environment == 'all' ||
         github.event.inputs.environment == 'sit' ||
         (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
-    )) }}
+        )) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -95,7 +95,7 @@ jobs:
         github.event.inputs.environment == 'all' ||
         github.event.inputs.environment == 'qa' ||
         (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat')
-    )) }}
+        )) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -118,7 +118,7 @@ jobs:
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
         github.event.inputs.environment == 'all' ||
         github.event.inputs.environment == 'uat'
-    )) }}
+        )) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
