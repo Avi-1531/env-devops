@@ -94,7 +94,7 @@ jobs:
 # Deploy to QA
   deploy-qa:
     runs-on: windows-latest
-    needs: build
+    needs: deploy-sit
     if: >
       github.event_name == 'push' || 
       (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) ||
@@ -118,7 +118,7 @@ jobs:
 # Deploy to UAT
   deploy-uat:
     runs-on: windows-latest
-    needs: build
+    needs: deploy-qa
     if: >
       github.event_name == 'push' || 
       (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') ||
