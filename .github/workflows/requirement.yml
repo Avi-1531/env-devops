@@ -67,11 +67,14 @@ jobs:
   deploy-sit:
     runs-on: windows-latest
     needs: build
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
+    if: >
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && (
         github.event.inputs.environment == 'all' ||
         github.event.inputs.environment == 'sit' ||
-        (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
-        )) }}
+        (github.event.inputs.mode == 'partial' && 
+          (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
+      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -91,11 +94,13 @@ jobs:
   deploy-qa:
     runs-on: windows-latest
     needs: deploy-sit
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
+    if: >
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && (
         github.event.inputs.environment == 'all' ||
         github.event.inputs.environment == 'qa' ||
         (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat')
-        )) }}
+      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -115,10 +120,12 @@ jobs:
   deploy-uat:
     runs-on: windows-latest
     needs: deploy-qa
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
+    if: >
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && (
         github.event.inputs.environment == 'all' ||
         github.event.inputs.environment == 'uat'
-        )) }}
+      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
