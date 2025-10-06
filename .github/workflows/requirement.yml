@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Choose environment to run (sit, qa, uat, release, all)'
+        description: 'Choose environment to run (sit, qa, uat, all)'
         required: true
         default: 'all'
         type: choice
@@ -63,12 +63,15 @@ jobs:
           name: .net-app
           path: ./publish
 
-# Deploy SIT
+# Deploy to SIT
   deploy-sit:
     runs-on: windows-latest
     needs: build
-    if: ${{ github.event_name == 'push' || github.event.inputs.environment == 'all' || github.event.inputs.environment == 'sit' || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) }}
-
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'sit' ||
+        (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
+    )) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -80,16 +83,19 @@ jobs:
         with:
           app-name: 'aviapp-sit'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
-          package: .
+          package: ./publish
         env:
           ASPNETCORE_ENVIRONMENT: SIT
 
-# Deploy QA
+# Deploy to QA
   deploy-qa:
     runs-on: windows-latest
     needs: deploy-sit
-    if: ${{ github.event_name == 'push' || github.event.inputs.environment == 'all' || github.event.inputs.environment == 'qa' || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') }}
-
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'qa' ||
+        (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat')
+    )) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -101,16 +107,18 @@ jobs:
         with:
           app-name: 'aviapp-qa'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
-          package: .
+          package: ./publish
         env:
           ASPNETCORE_ENVIRONMENT: QA
 
-# Deploy UAT
+# Deploy to UAT
   deploy-uat:
     runs-on: windows-latest
     needs: deploy-qa
-    if: ${{ github.event_name == 'push' || github.event.inputs.environment == 'all' || github.event.inputs.environment == 'uat' }}
-
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'uat'
+    )) }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -122,6 +130,6 @@ jobs:
         with:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
-          package: .
+          package: ./publish
         env:
           ASPNETCORE_ENVIRONMENT: UAT
