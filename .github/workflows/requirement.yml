@@ -1,0 +1,141 @@
+name: Build and deploy ASP.Net Core + Angular app to Azure Web App - dating-app-course
+
+on: 
+  push:
+  workflow_dispatch:
+    inputs:
+      environment:
+          description: 'Choose environment to run (sit, qa, uat, release)'
+          required: true
+          default: 'all'
+          type: choice
+          options:
+            - sit
+            - qa
+            - uat
+            - release
+      mode:
+          description: 'Choose run mode'
+          required: true
+          default: 'partial'
+          type: choice
+          options:
+            - partial      # Deploy prerequisite environments first
+            - single       # Only deploy the selected environment
+
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Set up .NET
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Set up Node.js for Angular
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Install Angular CLI
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli@20
+
+      # Build Angular frontend
+      - name: Build Angular frontend
+        run: |
+          cd client
+          npm install
+          ng build --configuration ${{ github.event.inputs.environment || 'production' }}
+
+      
+
+      # Build and publish API project
+      - name: Publish API project
+        run: dotnet publish API/API.csproj -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
+
+      # Upload artifact for deployment
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ./publish
+
+# Deploy to SIT
+  deploy-sit:
+    runs-on: windows-latest
+    environment: sit
+    needs: build
+    if: >
+      github.event_name == 'push' || 
+      (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) ||
+      (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'sit')
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+
+      - name: Deploy to SIT
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'aviapp-sit'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
+          package: .
+        env:
+          ASPNETCORE_ENVIRONMENT: SIT
+
+
+# Deploy to QA
+  deploy-qa:
+    runs-on: windows-latest
+    needs: build
+    if: >
+      github.event_name == 'push' || 
+      (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat')) ||
+      (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'qa')
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+
+      - name: Deploy to QA
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'aviapp-qa'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
+          package: .
+        env:
+          ASPNETCORE_ENVIRONMENT: QA
+
+
+# Deploy to UAT
+  deploy-uat:
+    runs-on: windows-latest
+    needs: build
+    if: >
+      github.event_name == 'push' || 
+      (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') ||
+      (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'uat')
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+
+      - name: Deploy to UAT
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'aviapp-uat'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
+          package: .
+        env:
+          ASPNETCORE_ENVIRONMENT: UAT
+
+
