@@ -1,0 +1,155 @@
+name: new-requirement
+
+on:
+  push:
+    
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Choose environment to run (sit, qa, uat, all)"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - sit
+          - qa
+          - uat
+          - all
+      mode:
+        description: "Choose run mode"
+        required: true
+        default: "partial"
+        type: choice
+        options:
+          - partial
+          - single
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      build-list: ${{ steps.set-build-list.outputs.list }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Install dependencies (common)
+        run: |
+          cd client
+          npm ci
+          cd ..
+          dotnet restore
+
+      - name: Determine build environments
+        id: set-build-list
+        shell: bash
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          ENV="${{ github.event.inputs.environment }}"
+          ORDER=("sit" "qa" "uat")
+          BUILD_LIST=()
+
+          if [ "$MODE" = "single" ]; then
+            BUILD_LIST=("$ENV")
+          elif [ "$MODE" = "partial" ]; then
+            for e in "${ORDER[@]}"; do
+              BUILD_LIST+=("$e")
+              if [ "$e" = "$ENV" ]; then
+                break
+              fi
+            done
+          else
+            BUILD_LIST=("${ORDER[@]}")
+          fi
+
+          echo "Environments to build: ${BUILD_LIST[@]}"
+          echo "::set-output name=list::${BUILD_LIST[*]}"
+
+      - name: Build & Publish for each environment
+        shell: bash
+        run: |
+          BUILD_LIST=(${{ steps.set-build-list.outputs.list }})
+          for e in "${BUILD_LIST[@]}"; do
+            echo "=== Building $e ==="
+            cd client
+            ng build --configuration "$e"
+            cd ..
+            dotnet publish API/API.csproj -c "$e" -o "./publish-$e"
+            # Upload artifact for each environment
+            gh actions upload-artifact --name "app-$e" --path "./publish-$e"
+          done
+
+  deploy-sit:
+    runs-on: windows-latest
+    needs: build
+    if: ${{ contains(needs.build.outputs.build-list, 'sit') }}
+    steps:
+      - name: Download SIT artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-sit
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to SIT
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'aviapp-sit'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
+          package: ./publish-sit
+
+  deploy-qa:
+    runs-on: windows-latest
+    needs: deploy-sit
+    if: ${{ contains(needs.build.outputs.build-list, 'qa') }}
+    steps:
+      - name: Download QA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-qa
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to QA
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'aviapp-qa'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
+          package: ./publish-qa
+
+  deploy-uat:
+    runs-on: windows-latest
+    needs: deploy-qa
+    if: ${{ contains(needs.build.outputs.build-list, 'uat') }}
+    steps:
+      - name: Download UAT artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-uat
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to UAT
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'aviapp-uat'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
+          package: ./publish-uat
