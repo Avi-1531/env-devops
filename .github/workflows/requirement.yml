@@ -24,48 +24,33 @@ on:
           - single
 
 jobs:
-  # =========================
-  # Build Job
-  # =========================
   build:
     runs-on: windows-latest
-    outputs:
-      env: ${{ github.event.inputs.environment }}
-      mode: ${{ github.event.inputs.mode }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Install Angular CLI
         run: npm install -g @angular/cli@20
-
       - name: Build Angular frontend
         run: |
           cd client
           npm install
           ng build --configuration ${{ github.event.inputs.environment || 'production' }}
-
       - name: Publish API project
         run: dotnet publish API/API.csproj -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
           path: ./publish
 
-  # =========================
-  # Deploy SIT
-  # =========================
   deploy-sit:
     runs-on: windows-latest
     needs: build
@@ -80,84 +65,69 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           allow-no-subscriptions: true
-
       - name: Deploy to SIT
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-sit'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
           package: .
-        env:
-          ASPNETCORE_ENVIRONMENT: SIT
 
-  # =========================
-  # Deploy QA
-  # =========================
   deploy-qa:
     runs-on: windows-latest
-    needs: deploy-sit
+    needs: [build, deploy-sit]
     if: |
-      github.event_name == 'push' ||
-      github.event.inputs.environment == 'all' ||
-      github.event.inputs.environment == 'qa' ||
-      (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') ||
-      (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'qa')
+      always() &&
+      (
+        github.event_name == 'push' ||
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'qa' ||
+        (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat') ||
+        (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'qa')
+      )
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          allow-no-subscriptions: true
-
       - name: Deploy to QA
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-qa'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
           package: .
-        env:
-          ASPNETCORE_ENVIRONMENT: QA
 
-  # =========================
-  # Deploy UAT
-  # =========================
   deploy-uat:
     runs-on: windows-latest
-    needs: deploy-qa
+    needs: [build, deploy-qa]
     if: |
-      github.event_name == 'push' ||
-      github.event.inputs.environment == 'all' ||
-      github.event.inputs.environment == 'uat' ||
-      (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'uat')
+      always() &&
+      (
+        github.event_name == 'push' ||
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'uat' ||
+        (github.event.inputs.mode == 'single' && github.event.inputs.environment == 'uat')
+      )
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          allow-no-subscriptions: true
-
       - name: Deploy to UAT
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: .
-        env:
-          ASPNETCORE_ENVIRONMENT: UAT
-
