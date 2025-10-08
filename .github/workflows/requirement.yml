@@ -60,68 +60,137 @@ jobs:
           name: .net-app
           path: ./publish
 
-  # =========================
-  # Deploy to SIT
-  # =========================
+# =========================
+# Deploy SIT
+# =========================
   deploy-sit:
     runs-on: windows-latest
     needs: build
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'all' || github.event.inputs.environment == 'sit' || (github.event.inputs.mode == 'partial' && (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+
+      - name: Pre-check SIT deployment
+        id: precheck-sit
+        run: |
+          EVENT="${{ github.event_name }}"
+          ENV="${{ github.event.inputs.environment }}"
+          MODE="${{ github.event.inputs.mode }}"
+          STAGE="sit"
+
+          declare -A order=( ["sit"]=1 ["qa"]=2 ["uat"]=3 )
+
+          # Push → always deploy
+          if [ "$EVENT" = "push" ]; then exit 0; fi
+
+          # All → always deploy
+          if [ "$ENV" = "all" ]; then exit 0; fi
+
+          # Single → deploy only if stage matches ENV
+          if [ "$MODE" = "single" ] && [ "$STAGE" != "$ENV" ]; then
+            echo "Skipping SIT (single mode)"
+            exit 78
+          fi
+
+          # Partial → deploy if stage order <= ENV order
+          if [ "$MODE" = "partial" ] && [ ${order[$STAGE]} -gt ${order[$ENV]} ]; then
+            echo "Skipping SIT (partial mode)"
+            exit 78
+          fi
 
       - name: Deploy to SIT
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-sit'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
-          package: ./publish
+          package: .
         env:
           ASPNETCORE_ENVIRONMENT: SIT
 
-  # =========================
-  # Deploy to QA
-  # =========================
+# =========================
+# Deploy QA
+# =========================
   deploy-qa:
     runs-on: windows-latest
     needs: deploy-sit
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'all' || github.event.inputs.environment == 'qa' || (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat')))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+
+      - name: Pre-check QA deployment
+        id: precheck-qa
+        run: |
+          EVENT="${{ github.event_name }}"
+          ENV="${{ github.event.inputs.environment }}"
+          MODE="${{ github.event.inputs.mode }}"
+          STAGE="qa"
+
+          declare -A order=( ["sit"]=1 ["qa"]=2 ["uat"]=3 )
+
+          if [ "$EVENT" = "push" ] || [ "$ENV" = "all" ]; then exit 0; fi
+
+          if [ "$MODE" = "single" ] && [ "$STAGE" != "$ENV" ]; then
+            echo "Skipping QA (single mode)"
+            exit 78
+          fi
+
+          if [ "$MODE" = "partial" ] && [ ${order[$STAGE]} -gt ${order[$ENV]} ]; then
+            echo "Skipping QA (partial mode)"
+            exit 78
+          fi
 
       - name: Deploy to QA
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-qa'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
-          package: ./publish
+          package: .
         env:
           ASPNETCORE_ENVIRONMENT: QA
 
-  # =========================
-  # Deploy to UAT
-  # =========================
+# =========================
+# Deploy UAT
+# =========================
   deploy-uat:
     runs-on: windows-latest
     needs: deploy-qa
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'all' || github.event.inputs.environment == 'uat'))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
 
+      - name: Pre-check UAT deployment
+        id: precheck-uat
+        run: |
+          EVENT="${{ github.event_name }}"
+          ENV="${{ github.event.inputs.environment }}"
+          MODE="${{ github.event.inputs.mode }}"
+          STAGE="uat"
+
+          declare -A order=( ["sit"]=1 ["qa"]=2 ["uat"]=3 )
+
+          if [ "$EVENT" = "push" ] || [ "$ENV" = "all" ]; then exit 0; fi
+
+          if [ "$MODE" = "single" ] && [ "$STAGE" != "$ENV" ]; then
+            echo "Skipping UAT (single mode)"
+            exit 78
+          fi
+
+          if [ "$MODE" = "partial" ] && [ ${order[$STAGE]} -gt ${order[$ENV]} ]; then
+            echo "Skipping UAT (partial mode)"
+            exit 78
+          fi
+
       - name: Deploy to UAT
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
-          package: ./publish
+          package: .
         env:
           ASPNETCORE_ENVIRONMENT: UAT
