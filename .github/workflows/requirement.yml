@@ -61,26 +61,29 @@ jobs:
           path: ./publish
 
   # =========================
-  # Deploy to SIT
+  # Deploy Job
   # =========================
-  deploy-sit:
+  deploy:
     runs-on: windows-latest
     needs: build
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && (
-        github.event.inputs.environment == 'all' ||
-        github.event.inputs.environment == 'sit' ||
-        (github.event.inputs.mode == 'partial' &&
-         (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
-      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
 
+      # =========================
+      # Deploy to SIT
+      # =========================
       - name: Deploy to SIT
+        if: |
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && (
+            (github.event.inputs.environment == 'all') ||
+            (github.event.inputs.environment == 'sit') ||
+            ((github.event.inputs.mode == 'partial') &&
+             ((github.event.inputs.environment == 'qa') || (github.event.inputs.environment == 'uat')))
+          ))
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-sit'
@@ -89,27 +92,18 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: SIT
 
-  # =========================
-  # Deploy to QA
-  # =========================
-  deploy-qa:
-    runs-on: windows-latest
-    needs: deploy-sit
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && (
-        github.event.inputs.environment == 'all' ||
-        github.event.inputs.environment == 'qa' ||
-        (github.event.inputs.mode == 'partial' &&
-         github.event.inputs.environment == 'uat')
-      ))
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
-
+      # =========================
+      # Deploy to QA
+      # =========================
       - name: Deploy to QA
+        if: |
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && (
+            (github.event.inputs.environment == 'all') ||
+            (github.event.inputs.environment == 'qa') ||
+            ((github.event.inputs.mode == 'partial') &&
+             (github.event.inputs.environment == 'uat'))
+          ))
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-qa'
@@ -118,25 +112,16 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: QA
 
-  # =========================
-  # Deploy to UAT
-  # =========================
-  deploy-uat:
-    runs-on: windows-latest
-    needs: deploy-qa
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && (
-        github.event.inputs.environment == 'all' ||
-        github.event.inputs.environment == 'uat'
-      ))
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
-
+      # =========================
+      # Deploy to UAT
+      # =========================
       - name: Deploy to UAT
+        if: |
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && (
+            (github.event.inputs.environment == 'all') ||
+            (github.event.inputs.environment == 'uat')
+          ))
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aviapp-uat'
