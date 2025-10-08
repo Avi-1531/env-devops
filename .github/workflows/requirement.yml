@@ -24,55 +24,56 @@ on:
           - single
 
 jobs:
+  # =========================
+  # Build Job
+  # =========================
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Setup .NET
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      # Install Angular CLI
       - name: Install Angular CLI
         run: npm install -g @angular/cli@20
 
-      # Build Angular frontend
       - name: Build Angular frontend
         run: |
           cd client
           npm install
           ng build --configuration ${{ github.event.inputs.environment || 'production' }}
 
-      # Build and publish API
       - name: Publish API project
         run: dotnet publish API/API.csproj -c ${{ github.event.inputs.environment || 'Release' }} -o ./publish
 
-      # Upload artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
           path: ./publish
 
-# Deploy to SIT
+  # =========================
+  # Deploy to SIT
+  # =========================
   deploy-sit:
     runs-on: windows-latest
     needs: build
-    if: >
+    if: |
       github.event_name == 'push' ||
-      github.event.inputs.environment == 'all' ||
-      github.event.inputs.environment == 'sit' ||
-      (github.event.inputs.mode == 'partial' && 
-        (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
+      (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'sit' ||
+        (github.event.inputs.mode == 'partial' &&
+         (github.event.inputs.environment == 'qa' || github.event.inputs.environment == 'uat'))
+      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -88,15 +89,20 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: SIT
 
-# Deploy to QA
+  # =========================
+  # Deploy to QA
+  # =========================
   deploy-qa:
     runs-on: windows-latest
     needs: deploy-sit
-    if: >
+    if: |
       github.event_name == 'push' ||
-      github.event.inputs.environment == 'all' ||
-      github.event.inputs.environment == 'qa' ||
-      (github.event.inputs.mode == 'partial' && github.event.inputs.environment == 'uat')
+      (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'qa' ||
+        (github.event.inputs.mode == 'partial' &&
+         github.event.inputs.environment == 'uat')
+      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -112,14 +118,18 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: QA
 
-# Deploy to UAT
+  # =========================
+  # Deploy to UAT
+  # =========================
   deploy-uat:
     runs-on: windows-latest
     needs: deploy-qa
-    if: >
+    if: |
       github.event_name == 'push' ||
-      github.event.inputs.environment == 'all' ||
-      github.event.inputs.environment == 'uat'
+      (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.environment == 'all' ||
+        github.event.inputs.environment == 'uat'
+      ))
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
