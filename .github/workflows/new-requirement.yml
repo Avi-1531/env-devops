@@ -83,14 +83,24 @@ jobs:
             ng build --configuration "$e"
             cd ..
             dotnet publish API/API.csproj -c "$e" -o "./publish-$e"
-            # Upload artifact for each environment
-            echo "Uploading artifact for $e"
-            echo "./publish-$e"
-            - name: Upload artifact
-            uses: actions/upload-artifact@v4
-            with:
-              name: "app-$e"
-              path: "./publish-$e"
+      - name: Upload SIT artifact
+        if: contains(steps.set-build-list.outputs.list, 'sit')
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-sit
+          path: ./publish-sit   
+      - name: Upload QA artifact
+        if: contains(steps.set-build-list.outputs.list, 'qa')
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-qa
+          path: ./publish-qa
+      - name: Upload UAT artifact
+        if: contains(steps.set-build-list.outputs.list, 'uat')
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-uat
+          path: ./publish-uat
 
   deploy-sit:
     runs-on: windows-latest
