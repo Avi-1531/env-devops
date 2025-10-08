@@ -71,6 +71,12 @@ jobs:
         with:
           name: .net-app
 
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          allow-no-subscriptions: true
+
       - name: Pre-check SIT deployment
         shell: bash
         run: |
@@ -113,6 +119,12 @@ jobs:
         with:
           name: .net-app
 
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          allow-no-subscriptions: true
+
       - name: Pre-check QA deployment
         shell: bash
         run: |
@@ -153,6 +165,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          allow-no-subscriptions: true
 
       - name: Pre-check UAT deployment
         shell: bash
