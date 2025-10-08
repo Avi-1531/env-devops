@@ -75,16 +75,13 @@ jobs:
 
       - name: Build & Publish for each environment
         shell: bash
-        env:
-          DOTNET_ROOT: C:\Program Files\dotnet
-          PATH: "/c/Program Files/nodejs:/c/Users/runner/AppData/Roaming/npm:$PATH"
         run: |
           BUILD_LIST=(${{ steps.set-build-list.outputs.list }})
           for e in "${BUILD_LIST[@]}"; do
             echo "=== Building $e ==="
             cd client
-            # Use the full path to ng to be safe
-            /c/Users/runner/AppData/Roaming/npm/ng build --configuration "$e"
+            # Use npx to run local or global Angular CLI
+            npx ng build --configuration "$e"
             cd ..
             dotnet publish API/API.csproj -c "$e" -o "./publish-$e"
           done
