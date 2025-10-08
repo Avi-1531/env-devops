@@ -2,7 +2,6 @@ name: new-requirement
 
 on:
   push:
-    
   workflow_dispatch:
     inputs:
       environment:
@@ -85,8 +84,13 @@ jobs:
             cd ..
             dotnet publish API/API.csproj -c "$e" -o "./publish-$e"
             # Upload artifact for each environment
-            gh actions upload-artifact --name "app-$e" --path "./publish-$e"
-          done
+            echo "Uploading artifact for $e"
+            echo "./publish-$e"
+            - name: Upload artifact
+            uses: actions/upload-artifact@v4
+            with:
+              name: "app-$e"
+              path: "./publish-$e"
 
   deploy-sit:
     runs-on: windows-latest
