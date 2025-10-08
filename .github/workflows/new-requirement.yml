@@ -75,6 +75,9 @@ jobs:
 
       - name: Build & Publish for each environment
         shell: bash
+        env:
+          DOTNET_ROOT: C:\Program Files\dotnet
+          PATH: $PATH:C:/Users/runner/AppData/Roaming/npm
         run: |
           BUILD_LIST=(${{ steps.set-build-list.outputs.list }})
           for e in "${BUILD_LIST[@]}"; do
@@ -84,6 +87,7 @@ jobs:
             cd ..
             dotnet publish API/API.csproj -c "$e" -o "./publish-$e"
           done
+
           
       - name: Upload SIT artifact
         if: contains(steps.set-build-list.outputs.list, 'sit')
