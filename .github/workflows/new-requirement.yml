@@ -134,7 +134,12 @@ jobs:
   deploy-qa:
     runs-on: windows-latest
     needs: [build, deploy-sit]
-    if: ${{ contains(needs.build.outputs.build-list, 'qa') }}
+    if: |
+      contains(needs.build.outputs.build-list, 'qa') &&
+      (
+        !contains(needs.build.outputs.build-list, 'sit') || 
+        (contains(needs.build.outputs.build-list, 'sit') && needs.deploy-sit.result == 'success')
+      )
     steps:
       - name: Download QA artifact
         uses: actions/download-artifact@v4
@@ -157,7 +162,12 @@ jobs:
   deploy-uat:
     runs-on: windows-latest
     needs: [build, deploy-qa]
-    if: ${{ contains(needs.build.outputs.build-list, 'uat') }}
+    if: |
+      contains(needs.build.outputs.build-list, 'uat') &&
+      (
+        !contains(needs.build.outputs.build-list, 'qa') || 
+        (contains(needs.build.outputs.build-list, 'qa') && needs.deploy-qa.result == 'success')
+      )
     steps:
       - name: Download UAT artifact
         uses: actions/download-artifact@v4
