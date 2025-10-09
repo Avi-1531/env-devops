@@ -135,6 +135,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     if: |
+      always() &&
       contains(needs.build.outputs.build-list, 'qa') &&
       (
         !contains(needs.build.outputs.build-list, 'sit') || 
@@ -163,6 +164,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     if: |
+      always() &&
       contains(needs.build.outputs.build-list, 'uat') &&
       (
         !contains(needs.build.outputs.build-list, 'qa') || 
