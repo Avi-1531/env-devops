@@ -133,7 +133,7 @@ jobs:
 
   deploy-qa:
     runs-on: windows-latest
-    needs: build
+    needs: [build, deploy-sit]
     if: |
       always() &&
       contains(needs.build.outputs.build-list, 'qa') &&
@@ -162,7 +162,7 @@ jobs:
 
   deploy-uat:
     runs-on: windows-latest
-    needs: build
+    needs: [build, deploy-qa]
     if: |
       always() &&
       contains(needs.build.outputs.build-list, 'uat') &&
