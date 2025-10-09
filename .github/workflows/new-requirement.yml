@@ -133,7 +133,7 @@ jobs:
 
   deploy-qa:
     runs-on: windows-latest
-    needs: deploy-sit
+    needs: [build, deploy-sit]
     if: ${{ contains(needs.build.outputs.build-list, 'qa') }}
     steps:
       - name: Download QA artifact
@@ -156,7 +156,7 @@ jobs:
 
   deploy-uat:
     runs-on: windows-latest
-    needs: deploy-qa
+    needs: [build, deploy-qa]
     if: ${{ contains(needs.build.outputs.build-list, 'uat') }}
     steps:
       - name: Download UAT artifact
