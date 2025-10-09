@@ -117,6 +117,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-sit
+          path: ./publish-sit
 
       - name: Azure Login
         uses: azure/login@v1
@@ -139,6 +140,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-qa
+          path: ./publish-qa
 
       - name: Azure Login
         uses: azure/login@v1
@@ -161,6 +163,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-uat
+          path: ./publish-uat
 
       - name: Azure Login
         uses: azure/login@v1
