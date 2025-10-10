@@ -61,7 +61,7 @@ jobs:
       - name: Download SIT artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-sit-${{ github.event.inputs.build_number }}
+          name: app-sit
           path: ./publish-sit
           run-id: ${{ github.event.inputs.build_number }} 
 
@@ -91,7 +91,7 @@ jobs:
       - name: Download QA artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-qa-${{ github.event.inputs.build_number }}
+          name: app-qa
           path: ./publish-qa
           run-id: ${{ github.event.inputs.build_number }} 
 
@@ -121,7 +121,7 @@ jobs:
       - name: Download UAT artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-uat-${{ github.event.inputs.build_number }}
+          name: app-uat
           path: ./publish-uat
           run-id: ${{ github.event.inputs.build_number }} 
 
