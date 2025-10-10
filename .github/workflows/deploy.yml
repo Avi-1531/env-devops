@@ -54,8 +54,9 @@ jobs:
 
   deploy-sit:
     runs-on: windows-latest
+    needs: set-build-list 
     
-    if: ${{ contains(needs.build.outputs.build-list, 'sit') }}
+    if: ${{ contains(needs.set-build-list.outputs.list, 'sit') }}
     steps:
       - name: Download SIT artifact
         uses: actions/download-artifact@v4
@@ -80,10 +81,10 @@ jobs:
     needs: deploy-sit
     if: |
       always() &&
-      contains(needs.build.outputs.build-list, 'qa') &&
+      contains(needs.set-build-list.outputs.list, 'qa') &&
       (
-        !contains(needs.build.outputs.build-list, 'sit') || 
-        (contains(needs.build.outputs.build-list, 'sit') && needs.deploy-sit.result == 'success')
+        !contains(needs.set-build-list.outputs.list, 'sit') || 
+        (contains(needs.set-build-list.outputs.list, 'sit') && needs.deploy-sit.result == 'success')
       )
     steps:
       - name: Download QA artifact
@@ -109,10 +110,10 @@ jobs:
     needs: deploy-qa
     if: |
       always() &&
-      contains(needs.build.outputs.build-list, 'uat') &&
+      contains(needs.set-build-list.outputs.list, 'uat') &&
       (
-        !contains(needs.build.outputs.build-list, 'qa') || 
-        (contains(needs.build.outputs.build-list, 'qa') && needs.deploy-qa.result == 'success')
+        !contains(needs.set-build-list.outputs.list, 'qa') || 
+        (contains(needs.set-build-list.outputs.list, 'qa') && needs.deploy-qa.result == 'success')
       )
     steps:
       - name: Download UAT artifact
