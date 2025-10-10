@@ -90,7 +90,7 @@ jobs:
         with:
           name: app-sit
           path: ./publish-sit
-          run-id: ${{ github.event.inputs.build_number }} 
+          run-id: ${{ needs.resolve-run-id.outputs.run_id }}
 
       - name: Azure Login
         uses: azure/login@v1
@@ -120,7 +120,7 @@ jobs:
         with:
           name: app-qa
           path: ./publish-qa
-          run-id: ${{ github.event.inputs.build_number }} 
+          run-id: ${{ needs.resolve-run-id.outputs.run_id }}
 
       - name: Azure Login
         uses: azure/login@v1
@@ -150,7 +150,7 @@ jobs:
         with:
           name: app-uat
           path: ./publish-uat
-          run-id: ${{ github.event.inputs.build_number }} 
+          run-id: ${{ needs.resolve-run-id.outputs.run_id }}
 
       - name: Azure Login
         uses: azure/login@v1
