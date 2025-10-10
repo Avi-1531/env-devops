@@ -66,15 +66,36 @@ jobs:
         with:
           name: app-${{ matrix.env }}-${{ github.event.inputs.build_number }}
           path: ./publish-${{ matrix.env }}
-
+  
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy to ${{ matrix.env }}
+  
+      # --- DEPLOY TO SIT ---
+      - name: Deploy to SIT
+        if: matrix.env == 'sit'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "aviapp-${{ matrix.env }}"
-          publish-profile: ${{ secrets[format('AZUREAPPSERVICE_PUBLISHPROFILE_{0}', upper(matrix.env))] }}
-          package: ./publish-${{ matrix.env }}
+          app-name: "aviapp-sit"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
+          package: ./publish-sit
+  
+      # --- DEPLOY TO QA ---
+      - name: Deploy to QA
+        if: matrix.env == 'qa'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "aviapp-qa"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
+          package: ./publish-qa
+  
+      # --- DEPLOY TO UAT ---
+      - name: Deploy to UAT
+        if: matrix.env == 'uat'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "aviapp-uat"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
+          package: ./publish-uat
+  
