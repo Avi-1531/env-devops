@@ -61,9 +61,9 @@ jobs:
       - name: Download SIT artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-sit
+          name: app-sit-${{ github.event.inputs.build_number }}
           path: ./publish-sit
-          run-id: ${{ github.event.inputs.build_run_id }}
+          run-id: ${{ github.event.inputs.build_number }} 
 
       - name: Azure Login
         uses: azure/login@v1
@@ -93,7 +93,7 @@ jobs:
         with:
           name: app-qa-${{ github.event.inputs.build_number }}
           path: ./publish-qa
-          run-id: ${{ github.event.inputs.build_run_id }}
+          run-id: ${{ github.event.inputs.build_number }} 
 
       - name: Azure Login
         uses: azure/login@v1
@@ -123,7 +123,7 @@ jobs:
         with:
           name: app-uat-${{ github.event.inputs.build_number }}
           path: ./publish-uat
-          run-id: ${{ github.event.inputs.build_run_id }}
+          run-id: ${{ github.event.inputs.build_number }} 
 
       - name: Azure Login
         uses: azure/login@v1
