@@ -52,54 +52,84 @@ jobs:
           echo "Environments to deploy: ${BUILD_LIST[@]}"
           echo "list=${BUILD_LIST[*]}" >> $GITHUB_OUTPUT
 
-  deploy:
+  deploy-sit:
     runs-on: windows-latest
-    needs: set-build-list
-    strategy:
-      matrix:
-        env: [sit, qa, uat]
-      max-parallel: 1
     
+    if: ${{ contains(needs.build.outputs.build-list, 'sit') }}
     steps:
-      - name: Skip if environment not in build list
-        if: contains(needs.set-build-list.outputs.list, matrix.env)
-        run: echo "Deploying ${{ matrix.env }}"
-      
-      - name: Download artifact for ${{ matrix.env }}
+      - name: Download SIT artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-${{ matrix.env }}-${{ github.event.inputs.build_number }}
-          path: ./publish-${{ matrix.env }}
-  
+          name: app-sit-${{ github.event.inputs.build_number }}
+          path: ./publish-sit
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-  
-      # --- DEPLOY TO SIT ---
+
       - name: Deploy to SIT
-        if: matrix.env == 'sit'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "aviapp-sit"
+          app-name: 'aviapp-sit'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_SIT }}
           package: ./publish-sit
-  
-      # --- DEPLOY TO QA ---
+
+  deploy-qa:
+    runs-on: windows-latest
+    needs: deploy-sit
+    if: |
+      always() &&
+      contains(needs.build.outputs.build-list, 'qa') &&
+      (
+        !contains(needs.build.outputs.build-list, 'sit') || 
+        (contains(needs.build.outputs.build-list, 'sit') && needs.deploy-sit.result == 'success')
+      )
+    steps:
+      - name: Download QA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-qa-${{ github.event.inputs.build_number }}
+          path: ./publish-qa
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to QA
-        if: matrix.env == 'qa'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "aviapp-qa"
+          app-name: 'aviapp-qa'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_QA }}
           package: ./publish-qa
-  
-      # --- DEPLOY TO UAT ---
+
+  deploy-uat:
+    runs-on: windows-latest
+    needs: deploy-qa
+    if: |
+      always() &&
+      contains(needs.build.outputs.build-list, 'uat') &&
+      (
+        !contains(needs.build.outputs.build-list, 'qa') || 
+        (contains(needs.build.outputs.build-list, 'qa') && needs.deploy-qa.result == 'success')
+      )
+    steps:
+      - name: Download UAT artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-uat-${{ github.event.inputs.build_number }}
+          path: ./publish-uat
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to UAT
-        if: matrix.env == 'uat'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "aviapp-uat"
+          app-name: 'aviapp-uat'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_UAT }}
           package: ./publish-uat
   
