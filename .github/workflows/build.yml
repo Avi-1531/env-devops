@@ -1,0 +1,57 @@
+name: Build and Upload Artifacts
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Install dependencies
+        run: |
+          cd client
+          npm ci
+          cd ..
+          dotnet restore
+
+      - name: Build for all environments
+        run: |
+          for env in sit qa uat; do
+            echo "Building for $env..."
+            cd client
+            npx ng build --configuration "$env"
+            cd ..
+            dotnet publish API/API.csproj -c "$env" -o "./publish-$env"
+          done
+
+      - name: Upload SIT artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-sit-${{ github.run_number }}
+          path: ./publish-sit
+
+      - name: Upload QA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-qa-${{ github.run_number }}
+          path: ./publish-qa
+
+      - name: Upload UAT artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-uat-${{ github.run_number }}
+          path: ./publish-uat
