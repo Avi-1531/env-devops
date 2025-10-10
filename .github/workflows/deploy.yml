@@ -1,0 +1,80 @@
+name: Deploy Existing Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "Enter build number (from Actions tab, e.g., 157)"
+        required: true
+        default: "latest"
+      environment:
+        description: "Choose environment to deploy (sit, qa, uat, all)"
+        required: true
+        default: "sit"
+        type: choice
+        options:
+          - sit
+          - qa
+          - uat
+          - all
+      mode:
+        description: "Deployment mode"
+        required: true
+        default: "single"
+        type: choice
+        options:
+          - single
+          - partial
+
+jobs:
+  set-build-list:
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.output-list.outputs.list }}
+    steps:
+      - id: output-list
+        shell: bash
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          ENV="${{ github.event.inputs.environment }}"
+          ORDER=("sit" "qa" "uat")
+          BUILD_LIST=()
+          if [ "$MODE" = "single" ]; then
+            BUILD_LIST=("$ENV")
+          elif [ "$MODE" = "partial" ]; then
+            for e in "${ORDER[@]}"; do
+              BUILD_LIST+=("$e")
+              [ "$e" = "$ENV" ] && break
+            done
+          else
+            BUILD_LIST=("${ORDER[@]}")
+          fi
+          echo "Environments to deploy: ${BUILD_LIST[@]}"
+          echo "list=${BUILD_LIST[*]}" >> $GITHUB_OUTPUT
+
+  deploy:
+    runs-on: windows-latest
+    needs: set-build-list
+    strategy:
+      matrix:
+        env: [sit, qa, uat]
+      max-parallel: 1
+    if: contains(needs.set-build-list.outputs.list, matrix.env)
+    steps:
+      - name: Download artifact for ${{ matrix.env }}
+        uses: actions/download-artifact@v4
+        with:
+          name: app-${{ matrix.env }}-${{ github.event.inputs.build_number }}
+          path: ./publish-${{ matrix.env }}
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to ${{ matrix.env }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "aviapp-${{ matrix.env }}"
+          publish-profile: ${{ secrets[format('AZUREAPPSERVICE_PUBLISHPROFILE_{0}', upper(matrix.env))] }}
+          package: ./publish-${{ matrix.env }}
