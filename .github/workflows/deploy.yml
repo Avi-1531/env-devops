@@ -59,8 +59,12 @@ jobs:
       matrix:
         env: [sit, qa, uat]
       max-parallel: 1
-    if: contains(needs.set-build-list.outputs.list, matrix.env)
+    
     steps:
+      - name: Skip if environment not in build list
+        if: contains(needs.set-build-list.outputs.list, matrix.env)
+        run: echo "Deploying ${{ matrix.env }}"
+      
       - name: Download artifact for ${{ matrix.env }}
         uses: actions/download-artifact@v4
         with:
