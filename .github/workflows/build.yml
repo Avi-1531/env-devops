@@ -29,6 +29,7 @@ jobs:
           dotnet restore
 
       - name: Build for all environments
+        shell: bash
         run: |
           for env in sit qa uat; do
             echo "Building for $env..."
