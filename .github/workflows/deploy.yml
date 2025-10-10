@@ -92,7 +92,7 @@ jobs:
           path: ./publish-sit
           run-id: ${{ needs.resolve-run-id.outputs.run_id }}
           # FIX: Provide PAT for cross-workflow access
-          token: ${{ secrets.ACTIONS_READ_PAT }}
+          github-token: ${{ secrets.ACTIONS_READ_PAT }}
           # Optional but helpful for clarity
           repository: ${{ github.repository }}
 
@@ -126,7 +126,7 @@ jobs:
           path: ./publish-qa
           run-id: ${{ needs.resolve-run-id.outputs.run_id }}
           # FIX: Provide PAT for cross-workflow access
-          token: ${{ secrets.ACTIONS_READ_PAT }}
+          github-token: ${{ secrets.ACTIONS_READ_PAT }}
           # Optional but helpful for clarity
           repository: ${{ github.repository }}
 
@@ -160,7 +160,7 @@ jobs:
           path: ./publish-uat
           run-id: ${{ needs.resolve-run-id.outputs.run_id }}
           # FIX: Provide PAT for cross-workflow access
-          token: ${{ secrets.ACTIONS_READ_PAT }}
+          github-token: ${{ secrets.ACTIONS_READ_PAT }}
           # Optional but helpful for clarity
           repository: ${{ github.repository }}
 
