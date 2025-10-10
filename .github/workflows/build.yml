@@ -42,17 +42,17 @@ jobs:
       - name: Upload SIT artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-sit-${{ github.run_number }}
+          name: app-sit
           path: ./publish-sit
 
       - name: Upload QA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-qa-${{ github.run_number }}
+          name: app-qa
           path: ./publish-qa
 
       - name: Upload UAT artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-uat-${{ github.run_number }}
+          name: app-uat
           path: ./publish-uat
